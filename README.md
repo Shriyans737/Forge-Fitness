@@ -67,3 +67,9 @@ Forge works fully offline — no sign-up, no login required. Just open the app a
 - **Nothing happens when I tap the APK** — try downloading it again, the file may not have fully downloaded
 - **Still stuck?** — open an issue here: [https://github.com/Shriyans737/Forge-Fitness/issues]
 ## Project Structure
+
+<img width="1554" height="875" alt="Screenshot 2026-09-27 at 1 11 01 PM" src="https://github.com/user-attachments/assets/7b167612-f4d8-4128-a82d-6b8f080a6ae5" />
+<img width="1282" height="716" alt="Screenshot 2026-09-27 at 1 10 51 PM" src="https://github.com/user-attachments/assets/c1d0d8c2-145f-4eb6-8fd7-37cd71d20844" />
+<img width="1547" height="867" alt="Screenshot 2026-09-27 at 1 11 19 PM" src="https://github.com/user-attachments/assets/4079a150-eb7e-4787-b903-ab720cba0c89" />
+<img width="1556" height="873" alt="Screenshot 2026-09-27 at 1 11 09 PM" src="https://github.com/user-attachments/assets/a4c8d20d-62b5-495c-98ab-d0c4999e42f7" />
+
