@@ -1,6 +1,6 @@
 <div align="center">
 
-# Forge 🔥
+# Forge 
 
 **A local-first fitness, health and nutrition tracker built with Flutter.**
 No account. No backend. No cloud. Your data stays on your phone.
@@ -52,7 +52,7 @@ Forge is a workout tracker that also pulls in your health data and logs your foo
 
 ## Features
 
-### 🏋️ Workouts
+###  Workouts
 - **Exercise library** with 870+ exercises. Filter by muscle group, body part, category and equipment, or search by name.
 - **Exercise detail screens** with start/end position images, step-by-step instructions, and a tutorial video. If an exercise has a YouTube ID it plays in an embedded player. Otherwise a "Watch tutorial" button opens a YouTube search.
 - **Muscle map on every exercise.** A front/back body diagram highlights primary and secondary muscles (red / gold / gray), shown alongside the muscle chips.
@@ -64,7 +64,7 @@ Forge is a workout tracker that also pulls in your health data and logs your foo
 - **Workout sharing.** Share a workout as an image card (with a plain-text fallback) from the post-workout summary, workout history detail, or a template detail screen.
 - **AI workout maker** for generating routines.
 
-### ❤️ Health
+###  Health
 The Health section has three tabs:
 
 | Tab | What it shows |
@@ -80,13 +80,13 @@ The Health section has three tabs:
 - Watch workouts are recognised by type and shown with proper names (for example "Strength Training" or "Basketball") rather than raw HealthKit enum names
 - Refresh button to re-pull Health data on demand
 
-### 🍎 Nutrition
+###  Nutrition
 - Daily goals for calories, protein, carbs and fat
 - Add food by **Open Food Facts search**, **barcode scan**, **AI photo detection**, or **manual entry**
 - **AI photo detection** uses Google Gemini (multimodal) to estimate what is on your plate. Results are editable before anything is saved.
 - Running log of everything eaten today
 
-### 📊 Dashboard
+###  Dashboard
 The first screen you see on launch:
 - Personalised greeting ("Hey <name>") set on first launch
 - Hero card and today's progress
@@ -96,7 +96,7 @@ The first screen you see on launch:
 - Sleep, Strain and Recovery rings that **replay their animation every time you return to the Dashboard tab**
 - Animated, with polished transitions throughout, including smoother bottom-nav tab switching
 
-### 🎨 Design
+###  Design
 - Dark and light themes (saved in settings)
 - Teal-to-lime gradient accents, card-based stats, arc, bar and line charts, pill tags and a floating bottom nav
 - Custom shared widgets (rings, pill gauge, tick dial, dot bar, gradient bar) reused across screens
@@ -314,18 +314,17 @@ This is a personal project, but suggestions and bug reports are welcome. Open an
 - Food data: [Open Food Facts](https://world.openfoodfacts.org/)
 - AI food detection: Google Gemini
 - Design inspiration: Whoop and Musemind Agency's dribbble work
-- Coded with GitHub Copilot
 
 ---
 
-## License
+##  MIT License
 
-Add your license here. [MIT](https://choosealicense.com/licenses/mit/) is a common choice for personal projects.
+https://github.com/Shriyans737/Forge-Fitness/tree/main?tab=MIT-1-ov-file
 
 ---
 
 <div align="center">
 
-Built by [Shriyans](https://github.com/<your-username>)
+Built by [Shriyans]
 
 </div>
