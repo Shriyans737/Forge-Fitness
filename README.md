@@ -327,4 +327,11 @@ https://github.com/Shriyans737/Forge-Fitness/tree/main?tab=MIT-1-ov-file
 
 Built by [Shriyans]
 
-</div>
+
+https://github.com/user-attachments/assets/1f719eea-efbe-443b-ae93-78ba58244a54
+
+<img width="2500" height="2652" alt="collage_2" src="https://github.com/user-attachments/assets/15914d33-781a-4585-b7a4-f6cd927bc47b" />
+<img width="3710" height="2652" alt="collage_3" src="https://github.com/user-attachments/assets/176935fd-2d2d-4865-b65e-40f579f5079f" />
+
+
+
