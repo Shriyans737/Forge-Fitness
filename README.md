@@ -1,75 +1,331 @@
-# Forge-Fitness
-Forge — an offline-first Flutter workout tracker. Log sets, weights, and reps with zero login or cloud sync. Browse 800+ exercises (free-exercise-db) with instructions, muscle targeting, and images. All data stays local via Hive. Fast, private, distraction-free training.
+<div align="center">
 
-# Forge 
+# Forge 🔥
 
-Forge is an offline-first workout tracking app built with Flutter. No accounts, no cloud sync, no subscriptions — just fast, local logging with full data ownership on your device.
+**A local-first fitness, health and nutrition tracker built with Flutter.**
+No account. No backend. No cloud. Your data stays on your phone.
+
+![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey)
+![Storage](https://img.shields.io/badge/storage-Hive%20(local)-orange)
+
+</div>
+
+<!-- Add screenshots here, for example a row of 3-4 images -->
+<!--
+<p align="center">
+  <img src="screenshots/dashboard.png" width="200" />
+  <img src="screenshots/health.png" width="200" />
+  <img src="screenshots/workout.png" width="200" />
+  <img src="screenshots/nutrition.png" width="200" />
+</p>
+-->
+
+---
+
+## Table of Contents
+
+- [About](#about)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Exercise Data](#exercise-data)
+- [Health Integration](#health-integration)
+- [AI Features and API Keys](#ai-features-and-api-keys)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Monetisation](#monetisation)
+- [Roadmap](#roadmap)
+- [Known Issues](#known-issues)
+- [Contributing](#contributing)
+- [Credits](#credits)
+- [License](#license)
+
+---
+
+## About
+
+Forge is a workout tracker that also pulls in your health data and logs your food, so everything about your training lives in one app. It is built to work fully offline. There is no sign-up, and nothing is sent to a server. The only network calls are optional ones: food lookups from Open Food Facts, AI food photo detection via Google Gemini (with your own API key), tutorial videos from YouTube, exercise images, and ads.
+
+---
 
 ## Features
 
-- **Local-only storage** — all workout data lives on-device via Hive, no internet required for core tracking
-- **800+ exercise library** — powered by [free-exercise-db](https://github.com/yuhonas/free-exercise-db), with instructions, muscle groups, equipment, difficulty level, and images
-- **Search & filter** — find exercises by name or muscle group
-- **Custom exercises** — add your own with description, muscle group, and optional media
-- **Workout logging** — start a session, add exercises, log sets (weight × reps) in real time
-- **Workout history** — review past sessions with full set-by-set breakdown, duration, and total volume
-- **Fast startup** — background-isolate JSON parsing and batched database writes keep first-launch seeding smooth
+### 🏋️ Workouts
+- **Exercise library** with 870+ exercises. Filter by muscle group, body part, category and equipment, or search by name.
+- **Exercise detail screens** with start/end position images, step-by-step instructions, and a tutorial video. If an exercise has a YouTube ID it plays in an embedded player. Otherwise a "Watch tutorial" button opens a YouTube search.
+- **Muscle map on every exercise.** A front/back body diagram highlights primary and secondary muscles (red / gold / gray), shown alongside the muscle chips.
+- **Workout template builder.** Name a template, search for exercises, add them, and set planned sets and reps for each one.
+- **Template detail screen.** Tapping a template opens its details, with **Start Workout** and **Share** buttons, instead of launching a session straight away.
+- **Active workout screen** that auto-saves as you go, so an app close or crash will not lose your session. You can search and add exercises while a session is running, and a live timer tracks the workout.
+- **Live muscle visualiser** showing which muscles you have hit so far, plus total volume and total reps, updating while you train.
+- **Workout summary** at the end of each session.
+- **Workout sharing.** Share a workout as an image card (with a plain-text fallback) from the post-workout summary, workout history detail, or a template detail screen.
+- **AI workout maker** for generating routines.
+
+### ❤️ Health
+The Health section has three tabs:
+
+| Tab | What it shows |
+|---|---|
+| **Overview** | Activity, sleep, vitals and body stats from Apple Health / Health Connect, plus a list of watch workouts with readable sport names, per-sport icons and a "Log in Forge" action |
+| **Body Log** | Weight and measurement entries with a trend chart and recent history |
+| **Nutrition** | Calorie, protein, carb and fat goals, food search and today's log |
+
+- Expanded health metrics: sleep, active energy, resting heart rate, flights climbed and more
+- Whoop-style gradient progress rings for the Overview summary
+- Health Monitor grid with vertical pill-slider gauges for vitals
+- Circular tick-mark dial for calories, dot-matrix macro bars, and a gradient net-energy bar
+- Watch workouts are recognised by type and shown with proper names (for example "Strength Training" or "Basketball") rather than raw HealthKit enum names
+- Refresh button to re-pull Health data on demand
+
+### 🍎 Nutrition
+- Daily goals for calories, protein, carbs and fat
+- Add food by **Open Food Facts search**, **barcode scan**, **AI photo detection**, or **manual entry**
+- **AI photo detection** uses Google Gemini (multimodal) to estimate what is on your plate. Results are editable before anything is saved.
+- Running log of everything eaten today
+
+### 📊 Dashboard
+The first screen you see on launch:
+- Personalised greeting ("Hey <name>") set on first launch
+- Hero card and today's progress
+- **Swipe-to-start** workout card: swipe left to right to begin a workout, with animation
+- Muscles worked today
+- Weekly overview cards
+- Sleep, Strain and Recovery rings that **replay their animation every time you return to the Dashboard tab**
+- Animated, with polished transitions throughout, including smoother bottom-nav tab switching
+
+### 🎨 Design
+- Dark and light themes (saved in settings)
+- Teal-to-lime gradient accents, card-based stats, arc, bar and line charts, pill tags and a floating bottom nav
+- Custom shared widgets (rings, pill gauge, tick dial, dot bar, gradient bar) reused across screens
+
+---
 
 ## Tech Stack
 
-- **Flutter** — cross-platform UI
-- **Hive** — local NoSQL database for offline persistence
-- **cached_network_image** — exercise image loading with caching
-- **uuid** — unique IDs for sessions and custom exercises
-- **fl_chart** — (planned) progress visualization
+| Area | Choice |
+|---|---|
+| Framework | Flutter (Dart) |
+| Local storage | Hive |
+| Secure storage | `flutter_secure_storage` (for the Gemini API key) |
+| Health data | [`health`](https://pub.dev/packages/health) package (HealthKit on iOS, Health Connect on Android) |
+| Food data | Open Food Facts API |
+| AI food detection | Google Gemini API (multimodal, bring your own key) |
+| Videos | YouTube (embedded player + search fallback) |
+| Images | `cached_network_image` |
+| Charts | `fl_chart` plus custom-painted widgets |
+| Muscle map | `flutter_body_part_selector` |
+| Sharing | `share_plus` |
+| Ads | Google AdMob (`google_mobile_ads`) |
+| Heavy work | Dart isolates via `compute()` |
+
+---
+
+## Architecture
+
+- **Local-first.** All user data (workouts, templates, body log, food log, settings) is stored in Hive on-device. There is no login and no backend.
+- **Seeding on first launch.** The bundled exercise dataset is parsed and written to Hive once, on a background isolate using `compute()`, so the UI thread is never blocked (this fixed an ANR caused by parsing the large dataset on the main isolate). A one-time seed flag stops it running again.
+- **Exercise model fields** include `category`, `bodyPart`, `target` and `mediaPath`, which power the library filters and detail screens.
+- **Templates store plans.** `WorkoutTemplate` holds planned sets and reps per exercise, which powers the template detail screen and sharing.
+- **Read-only Health access.** Forge only reads from HealthKit / Health Connect. It never writes back.
+- **Auto-save.** The active workout state is persisted continuously so sessions survive app restarts.
+- **Shared widget layer.** Rings, gauges and charts are built once as reusable custom-painted widgets and wired into the Dashboard and Health tabs.
+
+---
+
+## Exercise Data
+
+The exercise library is seeded from `assets/exercises.json`:
+
+- 876 exercises in the [free-exercise-db](https://github.com/yuhonas/free-exercise-db) format
+- String IDs (for example `3_4_Sit-Up`)
+- Two images per exercise (start and end position), loaded with `CachedNetworkImage` from the free-exercise-db GitHub raw URLs, so images need an internet connection the first time
+- Fields include name, category, body part, primary and secondary muscles, equipment and instructions
+
+### Adding YouTube tutorial IDs
+
+A helper script lives in `tools/youtube_ids/` and looks up a YouTube video ID for each exercise.
+
+```bash
+cd tools/youtube_ids
+# Add your YouTube Data API key (see the script's config)
+# Then run the script to generate the ID mapping
+```
+
+> Update this section with the exact commands once you have run it against the API.
+
+Exercises with an ID get the embedded player. Exercises without one get a "Watch tutorial" search link.
+
+---
+
+## Health Integration
+
+Forge reads these from Apple Health / Health Connect:
+
+- Steps and flights climbed
+- Heart rate, resting heart rate and other vitals
+- Active calories
+- Sleep
+- Workouts recorded by a watch
+
+Planned for watch workouts: a GPS route and a map view.
+
+### Platform setup
+
+**iOS**
+1. Open `ios/Runner.xcworkspace` in Xcode.
+2. Select your signing team and set your own bundle identifier.
+3. Add the **HealthKit** capability.
+4. Make sure `Info.plist` contains the Health usage descriptions.
+5. Run on a **physical iPhone**. HealthKit does not work on the simulator.
+
+A free Apple Developer account is enough to install on your own device for testing.
+
+**Android**
+1. Install Health Connect on the device (built in on newer Android versions).
+2. Check the required permissions and queries in `AndroidManifest.xml`.
+
+---
+
+## AI Features and API Keys
+
+AI photo detection in Nutrition uses the Google Gemini API.
+
+1. Create a Gemini API key in Google AI Studio.
+2. Open the Nutrition photo flow in the app and paste your key when asked.
+3. The key is stored on-device with `flutter_secure_storage`. It is never bundled in the repo.
+
+Detected foods are shown in an editable list, so you can correct names, portions and macros before saving to your log.
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-- Flutter SDK installed ([flutter.dev/docs/get-started/install](https://flutter.dev/docs/get-started/install))
-- An emulator or physical device
 
-# How to Install Forge
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (stable channel)
+- Android Studio and/or Xcode
+- A physical device for Health features
 
-Forge is currently available for **Android** as a downloadable APK file. Follow the steps below to install it on your phone.
+### Install and run
 
-##  Step 1: Download the App
+```bash
+git clone https://github.com/<your-username>/forge.git
+cd forge
+flutter pub get
+flutter run
+```
 
-Download the latest APK from the Releases page:
+### Build
 
- **[https://github.com/Shriyans737/Forge-Fitness/releases]
+```bash
+# Android debug APK
+flutter build apk --debug
 
-On the release page, click on the file ending in `.apk` under **Assets** to download it.
+# Android release APK
+flutter build apk --release
 
-## ⚙️ Step 2: Allow Installs from Unknown Sources
+# iOS (from macOS)
+flutter build ios
+```
 
-Since Forge isn't on the Google Play Store, Android will ask for permission to install it:
+### Checks
 
-1. Open the downloaded APK file from your **Notifications** or **Downloads** folder
-2. If prompted with *"For your security, your phone is not allowed to install unknown apps from this source"*, tap **Settings**
-3. Toggle on **Allow from this source**
-4. Go back and tap the APK file again
+```bash
+flutter analyze
+flutter test
+```
 
-*(This is a one-time step — required because the app isn't downloaded from the Play Store, not because it's unsafe.)*
+---
 
-##  Step 3: Install
-
-1. Tap **Install** when prompted
-2. Wait for it to finish, then tap **Open**
-
-## Step 4: You're All Set
-
-Forge works fully offline — no sign-up, no login required. Just open the app and start logging your workouts.
-
-##  Troubleshooting
-
-- **"App not installed" error** — make sure you have enough storage space, and that you don't already have an older version installed with a different signature (uninstall the old one first)
-- **Nothing happens when I tap the APK** — try downloading it again, the file may not have fully downloaded
-- **Still stuck?** — open an issue here: [https://github.com/Shriyans737/Forge-Fitness/issues]
 ## Project Structure
 
-<img width="1554" height="875" alt="Screenshot 2026-09-27 at 1 11 01 PM" src="https://github.com/user-attachments/assets/7b167612-f4d8-4128-a82d-6b8f080a6ae5" />
-<img width="1282" height="716" alt="Screenshot 2026-09-27 at 1 10 51 PM" src="https://github.com/user-attachments/assets/c1d0d8c2-145f-4eb6-8fd7-37cd71d20844" />
-<img width="1547" height="867" alt="Screenshot 2026-09-27 at 1 11 19 PM" src="https://github.com/user-attachments/assets/4079a150-eb7e-4787-b903-ab720cba0c89" />
-<img width="1556" height="873" alt="Screenshot 2026-09-27 at 1 11 09 PM" src="https://github.com/user-attachments/assets/a4c8d20d-62b5-495c-98ab-d0c4999e42f7" />
+```
+forge/
+├── lib/
+│   ├── models/          # Hive models and adapters
+│   ├── screens/         # Dashboard, library, workouts, health, nutrition, settings
+│   ├── widgets/         # Shared custom widgets (rings, gauges, dials, charts, muscle map)
+│   ├── services/        # Health, food search, Gemini, sharing, seeding, ads
+│   └── main.dart
+├── assets/
+│   └── exercises.json   # Bundled exercise dataset
+├── tools/
+│   └── youtube_ids/     # Script for fetching YouTube tutorial IDs
+├── android/
+├── ios/
+└── pubspec.yaml
+```
 
+> Adjust folder names to match your actual layout.
+
+---
+
+## Monetisation
+
+Forge uses Google AdMob. Current placements:
+
+- 2 ads in Settings
+- 1 ad on the exercise screen, shown only after roughly 15 completed workouts
+- 1 ad on the workout summary screen
+
+The project currently uses **AdMob test IDs**. Replace them with your own ad unit IDs before releasing, and never click your own live ads.
+
+---
+
+## Roadmap
+
+**In progress / next up**
+- [ ] Per-exercise progress charts with estimated 1RM
+- [ ] Progressive overload hints after each session
+- [ ] Goals and limits in Settings (steps, calories, macros, sleep, workouts, weight)
+- [ ] Goals onboarding on first launch
+- [ ] Watch workout detail: GPS route and map
+- [ ] Data backup and export (JSON / CSV)
+- [ ] Project website
+
+**Later**
+- [ ] Health coach features
+- [ ] Workout polish and more active-workout improvements
+- [ ] Optional Garmin Connect support
+
+---
+
+## Known Issues
+
+- Health data requires a physical device
+- Exercise images load from GitHub, so they need a connection and can show "Exercise image unavailable" if the request fails
+- Some Dashboard and Health widgets are still being polished
+- List anything else you are tracking here
+
+---
+
+## Contributing
+
+This is a personal project, but suggestions and bug reports are welcome. Open an issue to start a conversation before sending a pull request.
+
+---
+
+## Credits
+
+- Exercise data: [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain)
+- Food data: [Open Food Facts](https://world.openfoodfacts.org/)
+- AI food detection: Google Gemini
+- Design inspiration: Whoop and Musemind Agency's dribbble work
+- Coded with GitHub Copilot
+
+---
+
+## License
+
+Add your license here. [MIT](https://choosealicense.com/licenses/mit/) is a common choice for personal projects.
+
+---
+
+<div align="center">
+
+Built by [Shriyans](https://github.com/<your-username>)
+
+</div>
