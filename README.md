@@ -101,6 +101,12 @@ The first screen you see on launch:
 - Teal-to-lime gradient accents, card-based stats, arc, bar and line charts, pill tags and a floating bottom nav
 - Custom shared widgets (rings, pill gauge, tick dial, dot bar, gradient bar) reused across screens
 
+### Social
+- **Friends**: add friends with a friend code, and accept or decline requests
+- **Friend profiles**: see a friend's last 7 days of workouts, food, health and body log
+- **Sharing controls**: every category is off by default, and turning one off deletes that shared data
+- **Challenges**: custom challenges between friends (workouts completed, total volume, steps, active days) with a live leaderboard
+- **Chat**: direct messages and group chats
 ---
 
 ## Tech Stack
