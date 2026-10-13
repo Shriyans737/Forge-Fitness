@@ -1,0 +1,5 @@
+-keep class com.google.android.gms.ads.** { *; }
+-keep class cachet.plugins.health.** { *; }
+-keep class androidx.startup.** { *; }
+-keep class androidx.work.** { *; }
+-keep class androidx.room.** { *; }

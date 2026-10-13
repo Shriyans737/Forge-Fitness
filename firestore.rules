@@ -1,0 +1,588 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validUsername(name) {
+      return name.matches('^[a-z0-9_]{3,16}$');
+    }
+
+    function validFriendCode(code) {
+      return code.matches('^[A-Z0-9]{6}$');
+    }
+
+    function hasIncomingFriendRequest(members) {
+      let otherUid = members[0] == request.auth.uid
+        ? members[1]
+        : members[0];
+      let requestPath = /databases/$(database)/documents/friendRequests/$(
+        otherUid + '_' + request.auth.uid
+      );
+      return exists(requestPath)
+        && get(requestPath).data.fromUid == otherUid
+        && get(requestPath).data.toUid == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'username', 'displayName', 'friendCode', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'username', 'displayName', 'friendCode', 'createdAt'
+        ])
+        && validUsername(request.resource.data.username)
+        && request.resource.data.displayName is string
+        && validFriendCode(request.resource.data.friendCode)
+        && request.resource.data.createdAt == request.time
+        && getAfter(
+          /databases/$(database)/documents/usernames/$(request.resource.data.username)
+        ).data.uid == uid
+        && getAfter(
+          /databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)
+        ).data.uid == uid;
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'username', 'displayName', 'friendCode', 'createdAt'
+        ])
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.friendCode == resource.data.friendCode;
+    }
+
+    match /usernames/{name} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && validUsername(name)
+        && getAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.username == name;
+    }
+
+    match /friendCodes/{code} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && validFriendCode(code)
+        && getAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.friendCode == code;
+    }
+
+    match /friendRequests/{requestId} {
+      allow get: if signedIn()
+        && (requestId.matches('^' + request.auth.uid + '_.*$')
+          || requestId.matches('^.*_' + request.auth.uid + '$'));
+      allow list: if signedIn()
+        && ((requestId.matches('^' + request.auth.uid + '_.*$')
+            || requestId.matches('^.*_' + request.auth.uid + '$'))
+          || resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'fromUsername', 'fromDisplayName', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'fromUid', 'toUid', 'fromUsername', 'fromDisplayName', 'createdAt'
+        ])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && requestId == request.resource.data.fromUid + '_'
+          + request.resource.data.toUid
+        && request.resource.data.fromUsername is string
+        && request.resource.data.fromDisplayName is string
+        && request.resource.data.createdAt == request.time
+        && !exists(
+          /databases/$(database)/documents/blocks/$(
+            request.resource.data.toUid
+          )/blocked/$(request.auth.uid)
+        );
+      allow delete: if signedIn()
+        && (resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid);
+    }
+
+    match /friendships/{pairId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.members;
+      allow get: if request.auth != null && resource == null;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'pairId', 'members', 'usernames', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'pairId', 'members', 'usernames', 'createdAt'
+        ])
+        && request.resource.data.pairId == pairId
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.members[0] != request.resource.data.members[1]
+        && pairId == (
+          request.resource.data.members[0] < request.resource.data.members[1]
+            ? request.resource.data.members[0] + '_'
+              + request.resource.data.members[1]
+            : request.resource.data.members[1] + '_'
+              + request.resource.data.members[0]
+        )
+        && request.resource.data.usernames is map
+        && request.resource.data.createdAt == request.time
+        && hasIncomingFriendRequest(request.resource.data.members);
+      allow delete: if signedIn()
+        && resource.data.members is list
+        && request.auth.uid in resource.data.members;
+    }
+
+    match /sharing/{uid} {
+      allow read: if signedIn()
+        && (request.auth.uid == uid
+          || (isFriend(uid)
+            && (resource == null
+              || (resource.data.keys().hasOnly([
+                    'workouts', 'food', 'health', 'body', 'updatedAt'
+                  ])
+                && resource.data.keys().hasAll([
+                  'workouts', 'food', 'health', 'body', 'updatedAt'
+                ])
+                && resource.data.workouts is bool
+                && resource.data.food is bool
+                && resource.data.health is bool
+                && resource.data.body is bool
+                && resource.data.updatedAt is timestamp))));
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    function validUserDataPath(category, day) {
+      return category in ['workouts', 'food', 'health', 'body']
+        && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function isFriend(uid) {
+      let pairId = request.auth.uid < uid
+        ? request.auth.uid + '_' + uid
+        : uid + '_' + request.auth.uid;
+      let friendshipPath =
+        /databases/$(database)/documents/friendships/$(pairId);
+      return exists(friendshipPath)
+        && request.auth.uid in get(friendshipPath).data.members;
+    }
+
+    function validDmConversation(conversationId) {
+      let members = request.resource.data.memberUids;
+      let otherUid = members[0] == request.auth.uid
+        ? members[1]
+        : members[0];
+      let expectedId = request.auth.uid < otherUid
+        ? request.auth.uid + '_' + otherUid
+        : otherUid + '_' + request.auth.uid;
+      return request.resource.data.type == 'dm'
+        && members is list
+        && members.size() == 2
+        && request.auth.uid in members
+        && members[0] != members[1]
+        && conversationId == expectedId
+        && request.resource.data.creatorUid == request.auth.uid
+        && request.resource.data.memberNames is map
+        && request.resource.data.memberNames.keys().hasAll(members)
+        && request.resource.data.memberNames.keys().hasOnly(members)
+        && isFriend(otherUid);
+    }
+
+    function validGroupConversation() {
+      let members = request.resource.data.memberUids;
+      return request.resource.data.type == 'group'
+        && request.resource.data.creatorUid == request.auth.uid
+        && request.auth.uid in members
+        && members is list
+        && members.size() >= 3
+        && members.size() <= 20
+        && members.toSet().size() == members.size()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.memberNames is map
+        && request.resource.data.memberNames.keys().hasAll(members)
+        && request.resource.data.memberNames.keys().hasOnly(members)
+        && request.resource.data.lastMessage is string
+        && request.resource.data.lastSenderUid == request.auth.uid
+        && request.resource.data.lastMessageAt == request.time
+        && request.resource.data.lastRead is map
+        && request.resource.data.lastRead[request.auth.uid] == request.time
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validConversationMetadataUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let readChanged = changed.hasAny(['lastRead']);
+      let messageChanged = changed.hasAny([
+        'lastMessage', 'lastSenderUid', 'lastMessageAt'
+      ]);
+      return request.auth.uid in resource.data.memberUids
+        && changed.hasOnly([
+          'lastMessage', 'lastSenderUid', 'lastMessageAt', 'lastRead'
+        ])
+        && (!readChanged
+          || (request.resource.data.lastRead is map
+            && request.resource.data.lastRead.diff(resource.data.lastRead)
+              .affectedKeys().hasOnly([request.auth.uid])
+            && request.resource.data.lastRead[request.auth.uid]
+              == request.time))
+        && (!messageChanged
+          || (request.resource.data.lastMessage is string
+            && request.resource.data.lastMessage.size() <= 80
+            && request.resource.data.lastSenderUid
+              in resource.data.memberUids
+            && request.resource.data.lastMessageAt == request.time));
+    }
+
+    function creatorAddsGroupMembers() {
+      return resource.data.type == 'group'
+        && resource.data.creatorUid == request.auth.uid
+        && request.auth.uid in resource.data.memberUids
+        && request.resource.data.memberUids is list
+        && request.resource.data.memberUids.size()
+          == resource.data.memberUids.size() + 1
+        && request.resource.data.memberUids.size() <= 20
+        && request.resource.data.memberUids.hasAll(resource.data.memberUids)
+        && request.resource.data.memberNames is map
+        && request.resource.data.memberNames.keys()
+          .hasAll(request.resource.data.memberUids)
+        && request.resource.data.memberNames.diff(resource.data.memberNames)
+          .affectedKeys().size() == 1
+        && request.resource.data.memberNames.diff(resource.data.memberNames)
+          .affectedKeys().hasOnly(request.resource.data.memberUids)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberUids', 'memberNames']);
+    }
+
+    function memberLeavesGroup() {
+      return resource.data.type == 'group'
+        && request.auth.uid in resource.data.memberUids
+        && !(request.auth.uid in request.resource.data.memberUids)
+        && request.resource.data.memberUids.size()
+          == resource.data.memberUids.size() - 1
+        && resource.data.memberUids.hasAll(request.resource.data.memberUids)
+        && request.resource.data.memberNames is map
+        && request.resource.data.memberNames.keys()
+          .hasAll(request.resource.data.memberUids)
+        && resource.data.memberNames.diff(request.resource.data.memberNames)
+          .affectedKeys().size() == 1
+        && request.auth.uid
+          in resource.data.memberNames.diff(request.resource.data.memberNames)
+            .affectedKeys()
+        && resource.data.memberNames.diff(request.resource.data.memberNames)
+          .affectedKeys().hasOnly([request.auth.uid])
+        && resource.data.memberNames.diff(request.resource.data.memberNames)
+          .affectedKeys().hasAll([request.auth.uid])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberUids', 'memberNames']);
+    }
+
+    function dmRecipientHasNotBlockedSender(conversationId) {
+      let conversationPath =
+        /databases/$(database)/documents/conversations/$(conversationId);
+      let conversation = getAfter(conversationPath).data;
+      let otherUid = conversation.memberUids[0] == request.auth.uid
+        ? conversation.memberUids[1]
+        : conversation.memberUids[0];
+      return conversation.type != 'dm'
+        || !exists(
+          /databases/$(database)/documents/blocks/$(otherUid)/blocked/$(
+            request.auth.uid
+          )
+        );
+    }
+
+    function canLookupMissingDm(conversationId) {
+      let parts = conversationId.split('_');
+      return resource == null
+        && parts.size() == 2
+        && request.auth.uid in parts
+        && isFriend(
+          parts[0] == request.auth.uid ? parts[1] : parts[0]
+        );
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if signedIn()
+        && request.auth.uid in resource.data.memberUids;
+      allow get: if signedIn() && canLookupMissingDm(conversationId);
+      allow create: if signedIn()
+        && ((validDmConversation(conversationId)
+              && request.resource.data.keys().hasOnly([
+                'type', 'memberUids', 'memberNames', 'creatorUid',
+                'lastMessage', 'lastSenderUid', 'lastMessageAt',
+                'lastRead', 'createdAt'
+              ])
+              && request.resource.data.lastMessage is string
+              && request.resource.data.lastMessage.size() <= 80
+              && request.resource.data.lastSenderUid == request.auth.uid
+              && request.resource.data.lastMessageAt == request.time
+              && request.resource.data.lastRead is map
+              && request.resource.data.lastRead[request.auth.uid] == request.time
+              && request.resource.data.createdAt == request.time)
+          || (validGroupConversation()
+              && request.resource.data.keys().hasOnly([
+                'type', 'memberUids', 'memberNames', 'name', 'creatorUid',
+                'lastMessage', 'lastSenderUid', 'lastMessageAt',
+                'lastRead', 'createdAt'
+              ])));
+      allow update: if signedIn()
+        && (validConversationMetadataUpdate()
+          || creatorAddsGroupMembers()
+          || memberLeavesGroup());
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.memberUids;
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly([
+            'senderUid', 'senderName', 'text', 'createdAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'senderUid', 'senderName', 'text', 'createdAt'
+          ])
+          && request.resource.data.senderUid == request.auth.uid
+          && request.auth.uid in getAfter(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.memberUids
+          && request.resource.data.senderName is string
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt == request.time
+          && dmRecipientHasNotBlockedSender(conversationId);
+          
+        allow update: if false;
+        allow delete: if signedIn()
+          && resource.data.senderUid == request.auth.uid;
+      }
+    }
+
+    match /userData/{uid}/{category}/{day} {
+      allow read: if signedIn()
+        && validUserDataPath(category, day)
+        && (request.auth.uid == uid
+          || (isFriend(uid)
+            && get(
+              /databases/$(database)/documents/sharing/$(uid)
+            ).data[category] == true));
+      allow write: if signedIn()
+        && request.auth.uid == uid
+        && validUserDataPath(category, day);
+    }
+
+    function validChallengeMetric(metric) {
+      return metric in ['workouts', 'volume', 'steps', 'activeDays'];
+    }
+
+    function challengeMember(challengeId, uid) {
+      let challengePath =
+        /databases/$(database)/documents/challenges/$(challengeId);
+      return uid in getAfter(challengePath).data.memberUids;
+    }
+
+    function validChallengeCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name', 'metric', 'startDate', 'endDate', 'creatorUid',
+          'memberUids', 'memberNames', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'name', 'metric', 'startDate', 'endDate', 'creatorUid',
+          'memberUids', 'memberNames', 'status', 'createdAt'
+        ])
+        && request.resource.data.creatorUid == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid]
+        && request.resource.data.memberNames is map
+        && request.resource.data.memberNames.keys().hasOnly([
+          request.auth.uid
+        ])
+        && request.resource.data.memberNames.keys().hasAll([
+          request.auth.uid
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 40
+        && validChallengeMetric(request.resource.data.metric)
+        && request.resource.data.startDate is timestamp
+        && request.resource.data.endDate is timestamp
+        && request.resource.data.endDate > request.resource.data.startDate
+        && request.resource.data.endDate
+          <= request.resource.data.startDate + duration.value(60, 'd')
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function isChallengeCreatorEnding() {
+      return resource.data.creatorUid == request.auth.uid
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'ended'
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+    }
+
+    function isJoiningChallenge(challengeId) {
+      let invitePath =
+        /databases/$(database)/documents/challengeInvites/$(
+          challengeId + '_' + request.auth.uid
+        );
+      return !(request.auth.uid in resource.data.memberUids)
+        && request.auth.uid in request.resource.data.memberUids
+        && request.resource.data.memberUids.size()
+          == resource.data.memberUids.size() + 1
+        && request.resource.data.memberUids.hasAll(resource.data.memberUids)
+        && request.resource.data.memberNames.diff(resource.data.memberNames)
+          .affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.memberNames.diff(resource.data.memberNames)
+          .affectedKeys().hasAll([request.auth.uid])
+        && request.resource.data.memberNames[request.auth.uid] is string
+        && exists(invitePath)
+        && get(invitePath).data.toUid == request.auth.uid
+        && get(invitePath).data.challengeId == challengeId;
+    }
+
+    function isLeavingChallenge() {
+      return request.auth.uid in resource.data.memberUids
+        && !(request.auth.uid in request.resource.data.memberUids)
+        && request.resource.data.memberUids.size()
+          == resource.data.memberUids.size() - 1
+        && resource.data.memberUids.hasAll(
+          request.resource.data.memberUids
+        )
+        && request.resource.data.memberNames.diff(resource.data.memberNames)
+          .affectedKeys().hasOnly([request.auth.uid])
+        && !(request.auth.uid in request.resource.data.memberNames);
+    }
+
+    match /challenges/{challengeId} {
+      allow read: if signedIn()
+        && request.auth.uid in resource.data.memberUids;
+      allow create: if signedIn() && validChallengeCreate();
+      allow update: if signedIn()
+        && (isChallengeCreatorEnding()
+          || isJoiningChallenge(challengeId)
+          || isLeavingChallenge());
+      allow delete: if signedIn()
+        && resource.data.creatorUid == request.auth.uid;
+
+      match /scores/{uid} {
+        function parentChallenge() {
+          return get(
+            /databases/$(database)/documents/challenges/$(challengeId)
+          ).data;
+        }
+
+        function parentChallengeAfter() {
+          return getAfter(
+            /databases/$(database)/documents/challenges/$(challengeId)
+          ).data;
+        }
+
+        allow read: if signedIn()
+          && request.auth.uid in parentChallenge().memberUids;
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && request.auth.uid in parentChallengeAfter().memberUids
+          && request.resource.data.keys().hasOnly([
+            'score', 'perDay', 'username', 'updatedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'score', 'perDay', 'username', 'updatedAt'
+          ])
+          && request.resource.data.score is number
+          && request.resource.data.score >= 0
+          && request.resource.data.perDay is map
+          && request.resource.data.username is string
+          && request.resource.data.updatedAt == request.time
+          && request.time
+            <= parentChallengeAfter().endDate + duration.value(1, 'd');
+        allow delete: if signedIn()
+          && request.auth.uid == uid
+          && request.auth.uid in parentChallenge().memberUids;
+      }
+    }
+
+    match /challengeInvites/{inviteId} {
+      allow read: if signedIn()
+        && (resource.data.toUid == request.auth.uid
+          || resource.data.fromUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'challengeName', 'fromUid', 'fromUsername',
+          'toUid', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'challengeId', 'challengeName', 'fromUid', 'fromUsername',
+          'toUid', 'createdAt'
+        ])
+        && inviteId == request.resource.data.challengeId + '_'
+          + request.resource.data.toUid
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.fromUsername is string
+        && request.resource.data.challengeName is string
+        && request.resource.data.createdAt == request.time
+        && challengeMember(
+          request.resource.data.challengeId,
+          request.auth.uid
+        )
+        && isFriend(request.resource.data.toUid);
+      allow delete: if signedIn()
+        && (resource.data.toUid == request.auth.uid
+          || resource.data.fromUid == request.auth.uid);
+    }
+
+    match /blocks/{uid}/blocked/{otherUid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && otherUid != uid
+        && request.resource.data.keys().hasOnly(['createdAt', 'username'])
+        && request.resource.data.keys().hasAll(['createdAt', 'username'])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.username is string;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /reports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'reporterUid', 'reportedUid', 'conversationId', 'messageId',
+          'messageText', 'reason', 'note', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'reporterUid', 'reportedUid', 'conversationId', 'messageId',
+          'messageText', 'reason', 'note', 'createdAt'
+        ])
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.reportedUid is string
+        && request.resource.data.conversationId is string
+        && request.resource.data.messageId is string
+        && request.resource.data.messageText is string
+        && request.resource.data.messageText.size() <= 1000
+        && request.resource.data.reason
+          in ['Spam', 'Harassment', 'Inappropriate content', 'Other']
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 300
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

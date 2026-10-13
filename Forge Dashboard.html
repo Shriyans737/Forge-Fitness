@@ -1,0 +1,645 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Forge Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one phone-sized stage. Dark-first, committed single look.
+   Liquid start button on top, four tabs, glass nav floating over scrolling content. */
+:root {
+  --bg: #061210;
+  --surface: #0d1b19;
+  --surface-2: #132624;
+  --line: rgba(140, 255, 225, .13);
+  --fg: #e8f5f1;
+  --muted: #8aa8a1;
+  --teal: #62e3c8;
+  --lime: #d4f26e;
+  --warm: #f0925e;
+  --violet: #b58cf0;
+  --bad: #ef6b5e;
+  --ok: #f2c14e;
+  --good: #5be08f;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Figtree", "Avenir Next", "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  background-image: radial-gradient(900px 500px at 50% -10%, rgba(98, 227, 200, .12), transparent 70%);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding-inline: 16px;
+  padding-block: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.hint { margin: 0; color: var(--muted); font-size: 13px; text-align: center; text-wrap: balance; }
+.phone {
+  position: relative;
+  width: 100%;
+  max-width: 392px;
+  height: min(820px, calc(100dvh - 64px));
+  min-height: 560px;
+  border-radius: 40px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .8), 0 0 0 6px rgba(255, 255, 255, .03);
+}
+.screen {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 22px 16px 120px;
+  display: flex; flex-direction: column; gap: 14px;
+  scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.top h1 { font-size: 32px; line-height: 1.05; font-weight: 700; letter-spacing: -.02em; }
+.top p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ib {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: transparent; border: 0; color: var(--muted); cursor: pointer;
+}
+.ib:hover { color: var(--fg); }
+.ib:focus-visible, .tab:focus-visible, .liquid:focus-visible, .chip:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.ib svg { width: 22px; height: 22px; }
+.ib.spin svg { animation: spin .9s cubic-bezier(.5, 0, .3, 1); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.streak {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface);
+  font-weight: 600; font-size: 14px; white-space: nowrap;
+}
+.streak svg { width: 18px; height: 18px; transform-origin: 50% 90%; animation: flick 1.8s ease-in-out infinite; }
+@keyframes flick { 0%, 100% { transform: scale(1) rotate(0); } 30% { transform: scale(1.1, 1.18) rotate(-4deg); } 60% { transform: scale(.96, 1.05) rotate(3deg); } }
+
+/* liquid start button */
+.liquid {
+  position: relative; width: 100%; height: 132px; padding: 0;
+  border: 0; border-radius: 30px; overflow: hidden; isolation: isolate;
+  cursor: pointer; text-align: left; color: #04211c;
+  background: linear-gradient(135deg, #86ecd2, #dcf67f);
+  box-shadow: 0 18px 40px -16px rgba(98, 227, 200, .55), inset 0 1px 0 rgba(255, 255, 255, .55);
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.fill { position: absolute; inset: -28px; z-index: 0; filter: url(#goo); will-change: transform; }
+.layer { position: absolute; inset: 0; transform: translateY(60%); animation: bob 5s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(53%); } }
+.layer .body { position: absolute; inset: 0; background: linear-gradient(180deg, #2fc9a8, #7fdc72); }
+.wave { position: absolute; left: 0; width: 200%; height: 48px; animation: slosh 7s linear infinite; }
+.w1 { top: -46px; fill: #2fc9a8; }
+.w2 { top: -54px; fill: #8defd1; animation-duration: 11s; animation-direction: reverse; }
+@keyframes slosh { to { transform: translateX(-50%); } }
+.blob { position: absolute; top: -8px; border-radius: 50%; background: #2fc9a8; animation: leap 3.6s ease-in-out infinite; }
+@keyframes leap { 0%, 100% { transform: translateY(0) scale(.5); } 50% { transform: translateY(-44px) scale(1); } }
+.liquid .in {
+  position: relative; z-index: 2; height: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 20px 0 26px; pointer-events: none;
+}
+.liquid .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+.liquid .title { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -.02em; line-height: 1.1; margin-top: 4px; }
+.liquid .sub { font-size: 14px; margin-top: 2px; opacity: .8; }
+.liquid .go {
+  width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+  background: #0a1f1b; color: var(--teal); display: grid; place-items: center;
+  transition: transform .5s cubic-bezier(.3, 1.6, .5, 1);
+}
+.liquid .go svg { width: 24px; height: 24px; }
+.liquid.held .go { transform: scale(1.15) rotate(-45deg); }
+
+/* cards */
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 26px; padding: 18px;
+}
+.card.glass { background: linear-gradient(160deg, rgba(98, 227, 200, .08), rgba(13, 27, 25, .9) 55%); }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.card-h h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; color: var(--muted); font-family: var(--font-body); }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.tag svg { width: 15px; height: 15px; }
+.rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.ringcell { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.ring { position: relative; width: var(--s, 92px); height: var(--s, 92px); }
+.ring svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 7px var(--glow, transparent)); }
+.ring .mid {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: calc(var(--s, 92px) * .28);
+  letter-spacing: -.02em;
+}
+.ringcell .lab { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.ringcell .val { font-size: 13px; margin-top: -4px; text-wrap: balance; }
+.ringcell .val.dim { color: var(--muted); }
+.zone { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+/* week bars */
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; height: 110px; align-items: end; }
+.bar { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; font-size: 11px; color: var(--muted); }
+.bar i {
+  display: block; width: 100%; max-width: 30px; height: var(--h); border-radius: 10px 10px 6px 6px;
+  background: linear-gradient(180deg, var(--teal), rgba(98, 227, 200, .25));
+  transform: scaleY(0); transform-origin: bottom;
+  transition: transform .9s cubic-bezier(.2, .9, .2, 1); transition-delay: calc(var(--i) * 70ms);
+}
+.on .bar i { transform: scaleY(1); }
+.bar.today i { background: linear-gradient(180deg, var(--lime), var(--teal)); }
+.bar.today i { animation: pulse 2.4s ease-in-out 1.2s infinite; }
+@keyframes pulse { 50% { filter: brightness(1.25); } }
+.bar.today { color: var(--fg); font-weight: 600; }
+.bar.zero i { height: 4px; background: var(--line); }
+
+/* stat rows and lists */
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.row:first-of-type { border-top: 0; padding-top: 0; }
+.row:last-child { padding-bottom: 0; }
+.tile { width: 42px; height: 42px; border-radius: 14px; background: var(--surface-2); display: grid; place-items: center; color: var(--teal); flex-shrink: 0; }
+.tile svg { width: 22px; height: 22px; }
+.row .grow { flex: 1; min-width: 0; }
+.row .grow b { display: block; font-weight: 600; }
+.row .grow span { color: var(--muted); font-size: 13px; }
+.pill { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--teal); white-space: nowrap; }
+.search {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--muted);
+}
+.search svg { width: 20px; height: 20px; }
+.search input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--fg); font: inherit; outline: none; }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.chip {
+  flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  padding: 8px 14px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.chip.sel { background: linear-gradient(135deg, var(--teal), var(--lime)); color: #04211c; border-color: transparent; font-weight: 600; }
+.btn-ghost {
+  width: 100%; padding: 14px; border-radius: 20px; border: 1px dashed var(--line);
+  background: transparent; color: var(--teal); font: inherit; font-weight: 600; cursor: pointer;
+}
+
+/* health */
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); padding: 4px; gap: 4px; background: var(--surface); border-radius: 999px; border: 1px solid var(--line); }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; padding: 9px 0; border-radius: 999px; cursor: pointer; }
+.seg button.sel { background: var(--surface-2); color: var(--fg); }
+.vitals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.vital { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.vital .t { font-size: 12px; color: var(--muted); }
+.vital .v { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -.02em; }
+.vital .v small { font-family: var(--font-body); font-weight: 500; font-size: 12px; color: var(--muted); margin-left: 3px; }
+.gauge { height: 78px; width: 24px; border-radius: 999px; background: var(--surface-2); position: relative; overflow: hidden; }
+.gauge i { position: absolute; left: 0; right: 0; bottom: 0; height: var(--v); border-radius: 999px; background: linear-gradient(180deg, var(--lime), var(--teal)); transform: scaleY(0); transform-origin: bottom; transition: transform 1s cubic-bezier(.2, .9, .2, 1) .15s; }
+.on .gauge i { transform: scaleY(1); }
+.macro { display: grid; grid-template-columns: 62px 1fr auto; align-items: center; gap: 12px; padding: 7px 0; font-size: 13px; }
+.macro .n { color: var(--muted); }
+.dots { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.dots span { aspect-ratio: 1; border-radius: 50%; background: var(--surface-2); transition: background .3s, transform .5s cubic-bezier(.3, 1.6, .5, 1); transition-delay: calc(var(--i) * 28ms); transform: scale(.5); }
+.on .dots span { transform: scale(1); }
+.on .dots span.f { background: linear-gradient(135deg, var(--teal), var(--lime)); }
+
+/* liquid glass nav */
+.nav {
+  position: absolute; left: 14px; right: 14px; bottom: 14px; height: 70px; z-index: 10;
+  display: flex; padding: 6px; border-radius: 999px; isolation: isolate;
+  background: rgba(22, 40, 38, .38);
+  -webkit-backdrop-filter: blur(22px) saturate(1.9) brightness(1.1);
+  backdrop-filter: blur(22px) saturate(1.9) brightness(1.1);
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 20px 44px -12px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .28), inset 0 -10px 20px rgba(255, 255, 255, .04);
+}
+.nav::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+  background: radial-gradient(120px 50px at var(--mx, 50%) -10px, rgba(255, 255, 255, .22), transparent 70%);
+}
+.bubble {
+  position: absolute; top: 6px; bottom: 6px; left: 6px; width: 80px; border-radius: 999px; z-index: 0;
+  background: linear-gradient(160deg, rgba(98, 227, 200, .34), rgba(212, 242, 110, .16));
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), inset 0 -6px 12px rgba(98, 227, 200, .12), 0 6px 18px -6px rgba(98, 227, 200, .5);
+}
+.tab {
+  position: relative; z-index: 2; flex: 1; min-width: 0; border: 0; background: transparent; color: rgba(232, 245, 241, .62);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 999px; transition: color .3s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab svg { width: 23px; height: 23px; }
+.tab[aria-selected="true"] { color: var(--teal); }
+
+@media (max-width: 440px) {
+  .phone { border-radius: 32px; }
+  .top h1 { font-size: 29px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .layer { transform: translateY(56%); }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="goo" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/>
+      <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="g"/>
+      <feComposite in="SourceGraphic" in2="g" operator="atop"/>
+    </filter>
+    <linearGradient id="gStrain" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7c26a"/><stop offset="1" stop-color="#ef6b5e"/></linearGradient>
+    <linearGradient id="gSleep" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9a8f5"/><stop offset="1" stop-color="#8f8cf0"/></linearGradient>
+    <linearGradient id="gTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#62e3c8"/><stop offset="1" stop-color="#d4f26e"/></linearGradient>
+    <linearGradient id="gGood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5be08f"/><stop offset="1" stop-color="#b8f27a"/></linearGradient>
+    <linearGradient id="gBlue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fb5ff"/><stop offset="1" stop-color="#62e3c8"/></linearGradient>
+    <linearGradient id="gAmber" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2c14e"/><stop offset="1" stop-color="#f0925e"/></linearGradient>
+    <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="2.2" fill="currentColor"/><rect x="13" y="3" width="8" height="6" rx="2.2" fill="currentColor"/><rect x="3" y="15" width="8" height="6" rx="2.2" fill="currentColor"/><rect x="13" y="11" width="8" height="10" rx="2.2" fill="currentColor"/></symbol>
+    <symbol id="i-dumb" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M4 9l5-5M15 20l5-5M3 7l4-4M17 21l4-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M7 4h11a2 2 0 012 2v12M7 4a2 2 0 00-2 2v12a2 2 0 002 2h10M9 9h7M9 13h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.2-9.3C1.6 7.3 3.6 4 7 4c2 0 3.4 1 5 3 1.6-2 3-3 5-3 3.4 0 5.4 3.300 4.200 6.700C19.500 15.400 12 20 12 20z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.500l1.500 2.300 2.700-.6.900 2.600 2.600.900-.6 2.700L21.500 12l-2.400 1.500.6 2.700-2.600.9-.9 2.600-2.700-.6L12 21.500l-1.500-2.400-2.700.6-.9-2.600-2.600-.9.6-2.700L2.500 12l2.400-1.500-.6-2.700 2.600-.9.9-2.600 2.700.6z" fill="none" stroke="currentColor" stroke-width="1.700" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 00-14.500-4M4 13a8 8 0 0014.500 4M5.500 3v4h4M18.500 21v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.400" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.500" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.500 4.500" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.800"/><path d="M12 11v5M12 7.500v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.1M4 12h.1M4 18h.1" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<main style="display:contents">
+<div class="phone" id="phone">
+
+  <!-- DASHBOARD -->
+  <section class="screen" id="s0" aria-label="Dashboard">
+    <div class="top">
+      <div>
+        <h1>Hey Shriyans</h1>
+        <p>Good evening · Friday, October 9</p>
+      </div>
+      <div class="tools">
+        <button class="ib" id="sync" aria-label="Sync Apple Health"><svg><use href="#i-sync"/></svg></button>
+        <button class="ib" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-start">
+      <span class="streak"><svg viewBox="0 0 24 24"><path d="M12 2c1 4 5 6 5 11a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z" fill="#f2a04e"/><path d="M12 22a3 3 0 01-3-3c0-2 2-3 3-5 1 2 3 3 3 5a3 3 0 01-3 3z" fill="#ffd27a"/></svg> 1 day streak</span>
+    </div>
+
+    <button class="liquid card-in" id="start" aria-label="Start a workout. Press and hold to fill, release to start.">
+      <span class="fill" id="fill">
+        <span class="layer">
+          <svg class="wave w2" viewBox="0 0 1200 48" preserveAspectRatio="none"><path d="M0 24 Q150 0 300 24 T600 24 T900 24 T1200 24 V48 H0Z"/></svg>
+          <svg class="wave w1" viewBox="0 0 1200 48" preserveAspectRatio="none"><path d="M0 24 Q150 48 300 24 T600 24 T900 24 T1200 24 V48 H0Z"/></svg>
+          <span class="body"></span>
+          <span class="blob" style="left:22%;width:30px;height:30px;animation-delay:0s"></span>
+          <span class="blob" style="left:44%;width:22px;height:22px;animation-delay:-1.2s"></span>
+          <span class="blob" style="left:63%;width:34px;height:34px;animation-delay:-2.1s"></span>
+          <span class="blob" style="left:80%;width:20px;height:20px;animation-delay:-.6s"></span>
+        </span>
+      </span>
+      <span class="in">
+        <span>
+          <span class="eyebrow" id="eyebrow">Ready when you are</span>
+          <span class="title" style="display:block" id="stitle">Start a workout</span>
+          <span class="sub" style="display:block" id="ssub">Press and hold to fill</span>
+        </span>
+        <span class="go"><svg><use href="#i-arrow"/></svg></span>
+      </span>
+    </button>
+
+    <div class="card glass card-in">
+      <div class="card-h"><h2>Today's scores</h2><span class="tag"><svg><use href="#i-info"/></svg>Estimated</span></div>
+      <div class="rings">
+        <div class="ringcell">
+          <div class="ring" data-grad="" data-pct="0" data-dash="1" style="--s:92px"><span class="mid">—</span></div>
+          <div class="lab">Recovery</div>
+          <div class="val dim">Calibrating · 2/4 days</div>
+        </div>
+        <div class="ringcell">
+          <div class="ring" data-grad="gStrain" data-pct="0.56" data-glow="rgba(240,146,94,.55)" style="--s:92px"><span class="mid num"><b data-count data-to="11.8" data-dec="1" style="font-weight:inherit">0.0</b></span></div>
+          <div class="lab">Strain</div>
+          <div class="val">Moderate</div>
+        </div>
+        <div class="ringcell">
+          <div class="ring" data-grad="gSleep" data-pct="0.86" data-glow="rgba(181,140,240,.5)" style="--s:92px"><span class="mid num"><b data-count data-to="86" style="font-weight:inherit">0</b></span></div>
+          <div class="lab">Sleep</div>
+          <div class="val">7h 12m</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-in">
+      <div class="card-h"><h2>Today's progress</h2><span class="tag num">goal-based</span></div>
+      <div class="rings">
+        <div class="ringcell">
+          <div class="ring" data-grad="gTeal" data-pct="0.34" data-glow="rgba(98,227,200,.4)" style="--s:76px"><span class="mid num" style="font-size:19px"><b data-count data-to="3400" style="font-weight:inherit">0</b></span></div>
+          <div class="lab">Volume</div>
+          <div class="val dim num">of 10,000 kg</div>
+        </div>
+        <div class="ringcell">
+          <div class="ring" data-grad="gAmber" data-pct="0.86" data-glow="rgba(242,193,78,.4)" style="--s:76px"><span class="mid num" style="font-size:19px"><b data-count data-to="431" style="font-weight:inherit">0</b></span></div>
+          <div class="lab">Calories</div>
+          <div class="val dim num">of 500 kcal</div>
+        </div>
+        <div class="ringcell">
+          <div class="ring" data-grad="gBlue" data-pct="0.46" data-glow="rgba(111,181,255,.4)" style="--s:76px"><span class="mid num" style="font-size:19px"><b data-count data-to="3693" style="font-weight:inherit">0</b></span></div>
+          <div class="lab">Steps</div>
+          <div class="val dim num">of 8,000</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-in">
+      <div class="card-h"><h2>This week</h2><span class="tag num">2 / 4 workouts</span></div>
+      <div class="bars" role="img" aria-label="Workout volume per day this week">
+        <div class="bar"><i style="--h:62%;--i:0"></i>M</div>
+        <div class="bar zero"><i style="--h:4px;--i:1"></i>T</div>
+        <div class="bar"><i style="--h:84%;--i:2"></i>W</div>
+        <div class="bar zero"><i style="--h:4px;--i:3"></i>T</div>
+        <div class="bar today"><i style="--h:38%;--i:4"></i>F</div>
+        <div class="bar zero"><i style="--h:4px;--i:5"></i>S</div>
+        <div class="bar zero"><i style="--h:4px;--i:6"></i>S</div>
+      </div>
+    </div>
+    <p class="hint">Sample data for design review</p>
+  </section>
+
+  <!-- WORKOUTS -->
+  <section class="screen" id="s1" aria-label="Workouts" hidden>
+    <div class="top"><div><h1>Workouts</h1><p>Templates and history</p></div></div>
+    <div class="card card-in">
+      <div class="card-h"><h2>Your templates</h2></div>
+      <div class="row"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Barbell Chest Focus</b><span>6 exercises · about 55 min</span></span><span class="pill">Next</span></div>
+      <div class="row"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Pull Day</b><span>7 exercises · about 60 min</span></span></div>
+      <div class="row"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Leg Day</b><span>5 exercises · about 50 min</span></span></div>
+    </div>
+    <button class="btn-ghost card-in">+ Build a template</button>
+    <div class="card card-in">
+      <div class="card-h"><h2>Recent</h2></div>
+      <div class="row"><span class="grow"><b>Barbell Chest Hypertrophy</b><span>Wed · 3,400 kg total</span></span><span class="pill num">52 min</span></div>
+      <div class="row"><span class="grow"><b>Pull Day</b><span>Mon · 4,120 kg total</span></span><span class="pill num">61 min</span></div>
+    </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section class="screen" id="s2" aria-label="Library" hidden>
+    <div class="top"><div><h1>Library</h1><p>876 exercises</p></div></div>
+    <label class="search card-in"><svg><use href="#i-search"/></svg><input id="q" type="search" placeholder="Search exercises" autocomplete="off"></label>
+    <div class="chips card-in" id="chips">
+      <button class="chip sel">All</button><button class="chip">Chest</button><button class="chip">Back</button><button class="chip">Legs</button><button class="chip">Shoulders</button><button class="chip">Arms</button>
+    </div>
+    <div class="card card-in" id="list">
+      <div class="row" data-m="chest"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Barbell Bench Press</b><span>Barbell</span></span><span class="pill">Chest</span></div>
+      <div class="row" data-m="chest"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Incline Dumbbell Press</b><span>Dumbbell</span></span><span class="pill">Chest</span></div>
+      <div class="row" data-m="back"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Lat Pulldown</b><span>Cable</span></span><span class="pill">Back</span></div>
+      <div class="row" data-m="back"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Seated Cable Row</b><span>Cable</span></span><span class="pill">Back</span></div>
+      <div class="row" data-m="legs"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Back Squat</b><span>Barbell</span></span><span class="pill">Legs</span></div>
+      <div class="row" data-m="shoulders"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Overhead Press</b><span>Barbell</span></span><span class="pill">Shoulders</span></div>
+      <div class="row" data-m="arms"><span class="tile"><svg><use href="#i-dumb"/></svg></span><span class="grow"><b>Hammer Curl</b><span>Dumbbell</span></span><span class="pill">Arms</span></div>
+    </div>
+  </section>
+
+  <!-- HEALTH -->
+  <section class="screen" id="s3" aria-label="Health" hidden>
+    <div class="top"><div><h1>Health</h1><p>Synced from Apple Health · 3 min ago</p></div></div>
+    <div class="seg card-in"><button class="sel">Overview</button><button>Body log</button><button>Nutrition</button></div>
+    <div class="vitals card-in">
+      <div class="vital"><span class="t">Heart rate</span><div class="gauge"><i style="--v:58%"></i></div><span class="v num">62<small>bpm</small></span></div>
+      <div class="vital"><span class="t">HRV</span><div class="gauge"><i style="--v:72%"></i></div><span class="v num">48<small>ms</small></span></div>
+      <div class="vital"><span class="t">Active</span><div class="gauge"><i style="--v:86%"></i></div><span class="v num">431<small>kcal</small></span></div>
+    </div>
+    <div class="card card-in">
+      <div class="card-h"><h2>Macros today</h2><span class="tag num">517 / 2,200 kcal</span></div>
+      <div class="macro"><span class="n">Protein</span><div class="dots" data-fill="2"></div><span class="num">10 g</span></div>
+      <div class="macro"><span class="n">Carbs</span><div class="dots" data-fill="5"></div><span class="num">62 g</span></div>
+      <div class="macro"><span class="n">Fat</span><div class="dots" data-fill="3"></div><span class="num">14 g</span></div>
+    </div>
+  </section>
+
+  <!-- liquid glass nav -->
+  <nav class="nav" id="nav" role="tablist" aria-label="Main">
+    <span class="bubble" id="bubble"></span>
+    <button class="tab" role="tab" aria-selected="true" data-i="0"><svg><use href="#i-dash"/></svg>Dashboard</button>
+    <button class="tab" role="tab" aria-selected="false" data-i="1"><svg><use href="#i-dumb"/></svg>Workouts</button>
+    <button class="tab" role="tab" aria-selected="false" data-i="2"><svg><use href="#i-book"/></svg>Library</button>
+    <button class="tab" role="tab" aria-selected="false" data-i="3"><svg><use href="#i-heart"/></svg>Health</button>
+  </nav>
+</div>
+<p class="hint">Tap the tabs to see the glass nav and transitions. Press and hold Start a workout.</p>
+</main>
+
+<script>
+(function () {
+  var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var ease = "cubic-bezier(.2,.8,.2,1)";
+  var NS = "http://www.w3.org/2000/svg";
+  var R = 44, C = 2 * Math.PI * R;
+
+  // build rings
+  document.querySelectorAll(".ring").forEach(function (el) {
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    var t = document.createElementNS(NS, "circle");
+    t.setAttribute("cx", 50); t.setAttribute("cy", 50); t.setAttribute("r", R);
+    t.setAttribute("fill", "none"); t.setAttribute("stroke", "rgba(255,255,255,.08)"); t.setAttribute("stroke-width", 9);
+    if (el.dataset.dash) t.setAttribute("stroke-dasharray", "3 9"), t.setAttribute("stroke-linecap", "round");
+    svg.appendChild(t);
+    if (el.dataset.grad) {
+      var a = document.createElementNS(NS, "circle");
+      a.setAttribute("cx", 50); a.setAttribute("cy", 50); a.setAttribute("r", R);
+      a.setAttribute("fill", "none"); a.setAttribute("stroke", "url(#" + el.dataset.grad + ")");
+      a.setAttribute("stroke-width", 9); a.setAttribute("stroke-linecap", "round");
+      a.setAttribute("transform", "rotate(-90 50 50)");
+      a.setAttribute("stroke-dasharray", C); a.setAttribute("stroke-dashoffset", C);
+      a.setAttribute("class", "arc");
+      svg.appendChild(a);
+      if (el.dataset.glow) el.style.setProperty("--glow", el.dataset.glow);
+    }
+    el.insertBefore(svg, el.firstChild);
+  });
+
+  // dots
+  document.querySelectorAll(".dots").forEach(function (d) {
+    var f = +d.dataset.fill;
+    for (var i = 0; i < 20; i++) {
+      var s = document.createElement("span");
+      s.style.setProperty("--i", i);
+      if (i < f * 2 + 2 && i < f * 4) s.className = "f";
+      d.appendChild(s);
+    }
+  });
+
+  function count(el) {
+    var to = parseFloat(el.dataset.to), dec = +(el.dataset.dec || 0), dur = RM ? 0 : 1100, t0 = null;
+    function fmt(v) { return dec ? v.toFixed(dec) : Math.round(v).toLocaleString("en-US"); }
+    if (!dur) { el.textContent = fmt(to); return; }
+    el.textContent = fmt(0);
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(to * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function animateIn(screen) {
+    screen.classList.remove("on");
+    var arcs = screen.querySelectorAll(".arc");
+    arcs.forEach(function (a) { a.style.transition = "none"; a.setAttribute("stroke-dashoffset", C); });
+    void screen.offsetWidth;
+    requestAnimationFrame(function () {
+      screen.classList.add("on");
+      arcs.forEach(function (a, i) {
+        var pct = parseFloat(a.parentNode.parentNode.dataset.pct);
+        var target = C * (1 - Math.max(pct, pct > 0 ? 0.02 : 0));
+        a.style.transition = RM ? "none" : "stroke-dashoffset 1.15s " + ease + " " + (i * 90 + 180) + "ms";
+        a.setAttribute("stroke-dashoffset", target);
+      });
+      screen.querySelectorAll("[data-count]").forEach(count);
+    });
+  }
+
+  // tabs
+  var screens = [0, 1, 2, 3].map(function (i) { return document.getElementById("s" + i); });
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  var bubble = document.getElementById("bubble");
+  var nav = document.getElementById("nav");
+  var cur = 0, busy = false;
+
+  function place(i) {
+    var b = tabs[i];
+    bubble.style.left = b.offsetLeft + "px";
+    bubble.style.width = b.offsetWidth + "px";
+  }
+  function move(from, to) {
+    var a = tabs[from], b = tabs[to];
+    var l1 = a.offsetLeft, w1 = a.offsetWidth, l2 = b.offsetLeft, w2 = b.offsetWidth;
+    var sl = Math.min(l1, l2), sw = Math.max(l1 + w1, l2 + w2) - sl;
+    if (!RM && bubble.animate) {
+      bubble.animate([
+        { left: l1 + "px", width: w1 + "px", transform: "scaleY(1)" },
+        { left: sl + "px", width: sw + "px", transform: "scaleY(.86)", offset: .45 },
+        { left: l2 + "px", width: w2 + "px", transform: "scaleY(1)" }
+      ], { duration: 620, easing: "cubic-bezier(.45,0,.2,1)" });
+    }
+    place(to);
+    if (!RM && b.firstElementChild.animate) {
+      b.firstElementChild.animate([
+        { transform: "scale(.7) translateY(4px)" }, { transform: "scale(1.18) translateY(-3px)", offset: .55 }, { transform: "scale(1)" }
+      ], { duration: 560, easing: "ease-out" });
+    }
+  }
+  function go(i) {
+    if (i === cur || busy) return;
+    var dir = i > cur ? 1 : -1, old = screens[cur], nw = screens[i], from = cur;
+    busy = true; cur = i;
+    tabs.forEach(function (t, k) { t.setAttribute("aria-selected", k === i ? "true" : "false"); });
+    move(from, i);
+    nw.hidden = false; nw.scrollTop = 0;
+    if (RM || !nw.animate) { old.hidden = true; busy = false; animateIn(nw); return; }
+    old.animate(
+      [{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "translateX(" + (-dir * 56) + "px) scale(.97)", filter: "blur(8px)" }],
+      { duration: 380, easing: "ease-in", fill: "forwards" }
+    ).finished.then(function () { old.hidden = true; old.getAnimations().forEach(function (a) { a.cancel(); }); });
+    nw.animate(
+      [{ opacity: 0, transform: "translateX(" + (dir * 56) + "px) scale(.97)", filter: "blur(8px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }],
+      { duration: 560, easing: ease, delay: 120, fill: "backwards" }
+    ).finished.then(function () { busy = false; });
+    nw.querySelectorAll(".card-in").forEach(function (c, k) {
+      c.animate(
+        [{ opacity: 0, transform: "translateY(22px)" }, { opacity: 1, transform: "none" }],
+        { duration: 520, easing: ease, delay: 200 + k * 70, fill: "backwards" }
+      );
+    });
+    animateIn(nw);
+  }
+  tabs.forEach(function (t) { t.addEventListener("click", function () { go(+t.dataset.i); }); });
+  nav.addEventListener("pointermove", function (e) {
+    var r = nav.getBoundingClientRect();
+    nav.style.setProperty("--mx", (e.clientX - r.left) + "px");
+  });
+  window.addEventListener("resize", function () { place(cur); });
+
+  // liquid start button
+  var btn = document.getElementById("start"), fill = document.getElementById("fill");
+  var title = document.getElementById("stitle"), sub = document.getElementById("ssub"), eyebrow = document.getElementById("eyebrow");
+  var rise = null, held = false, locked = false;
+  function drain(delay) {
+    setTimeout(function () {
+      held = false; locked = false; btn.classList.remove("held");
+      if (rise) rise.cancel();
+      fill.style.transform = "";
+      if (!RM && fill.animate) fill.animate([{ transform: "translateY(-62%)" }, { transform: "translateY(0)" }], { duration: 1100, easing: "cubic-bezier(.6,0,.3,1)" });
+      eyebrow.textContent = "Ready when you are"; title.textContent = "Start a workout"; sub.textContent = "Press and hold to fill";
+    }, delay);
+  }
+  function down() {
+    if (locked) return;
+    held = true; btn.classList.add("held");
+    sub.textContent = "Keep holding…";
+    if (RM || !fill.animate) { fill.style.transform = "translateY(-62%)"; return; }
+    rise = fill.animate([{ transform: "translateY(0)" }, { transform: "translateY(-62%)" }], { duration: 900, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
+  }
+  function up(e) {
+    if (!held || locked) return;
+    var done = !rise || rise.playState === "finished" || RM;
+    if (done) {
+      locked = true;
+      eyebrow.textContent = "Workout ready"; title.textContent = "Let's go"; sub.textContent = "Barbell Chest Focus";
+      drain(1500);
+    } else { drain(0); }
+  }
+  btn.addEventListener("pointerdown", down);
+  btn.addEventListener("pointerup", up);
+  btn.addEventListener("pointerleave", function () { if (held && !locked) drain(0); });
+  btn.addEventListener("pointercancel", function () { drain(0); });
+  btn.addEventListener("keydown", function (e) { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); down(); } });
+  btn.addEventListener("keyup", function (e) { if (e.key === " " || e.key === "Enter") up(); });
+
+  // sync icon
+  var sync = document.getElementById("sync");
+  sync.addEventListener("click", function () {
+    sync.classList.remove("spin"); void sync.offsetWidth; sync.classList.add("spin");
+    animateIn(screens[cur]);
+  });
+
+  // library filter
+  var chips = document.querySelectorAll("#chips .chip"), q = document.getElementById("q"), rows = document.querySelectorAll("#list .row");
+  var sel = "all";
+  function filter() {
+    var term = q.value.trim().toLowerCase();
+    rows.forEach(function (r) {
+      var ok = (sel === "all" || r.dataset.m === sel) && (!term || r.textContent.toLowerCase().indexOf(term) > -1);
+      r.hidden = !ok;
+    });
+  }
+  chips.forEach(function (c) {
+    c.addEventListener("click", function () {
+      chips.forEach(function (x) { x.classList.remove("sel"); });
+      c.classList.add("sel"); sel = c.textContent.toLowerCase(); filter();
+    });
+  });
+  q.addEventListener("input", filter);
+
+  // health segmented control
+  var segs = document.querySelectorAll(".seg button");
+  segs.forEach(function (b) {
+    b.addEventListener("click", function () { segs.forEach(function (x) { x.classList.remove("sel"); }); b.classList.add("sel"); });
+  });
+
+  // boot
+  function boot() { place(0); animateIn(screens[0]); }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(boot); else boot();
+  place(0);
+})();
+</script>
+
+</body></html>
