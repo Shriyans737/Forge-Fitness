@@ -2,13 +2,13 @@
 
 # Forge 
 
-**A local-first fitness, health and nutrition tracker built with Flutter.**
-No account. No backend. No cloud. Your data stays on your phone.
+**A fitness, health and nutrition tracker with friends, challenges and chat. Built with Flutter.**
+Train, track your health, log your food, and compete with friends, all in one app.
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey)
-![Storage](https://img.shields.io/badge/storage-Hive%20(local)-orange)
+![Storage](https://img.shields.io/badge/storage-Hive%20%2B%20cloud-orange)
 
 </div>
 
@@ -46,7 +46,9 @@ No account. No backend. No cloud. Your data stays on your phone.
 
 ## About
 
-Forge is a workout tracker that also pulls in your health data and logs your food, so everything about your training lives in one app. It is built to work fully offline. There is no sign-up, and nothing is sent to a server. The only network calls are optional ones: food lookups from Open Food Facts, AI food photo detection via Google Gemini (with your own API key), tutorial videos from YouTube, exercise images, and ads.
+Forge is a workout tracker that also pulls in your health data and logs your food, so everything about your training lives in one app. It is also social: add friends, see how they are training, join challenges and chat with them.
+
+Forge is not a local-only app. Social features (friends, challenges, chat and shared stats) run through a cloud backend, so you need an internet connection and an account to use them. Workouts and logs are cached on your device so the core tracking still feels fast. Other network calls: food lookups from Open Food Facts, AI food photo detection via Google Gemini (with your own API key), tutorial videos from YouTube, exercise images, and ads.
 
 ---
 
@@ -96,17 +98,18 @@ The first screen you see on launch:
 - Sleep, Strain and Recovery rings that **replay their animation every time you return to the Dashboard tab**
 - Animated, with polished transitions throughout, including smoother bottom-nav tab switching
 
-###  Design
-- Dark and light themes (saved in settings)
-- Teal-to-lime gradient accents, card-based stats, arc, bar and line charts, pill tags and a floating bottom nav
-- Custom shared widgets (rings, pill gauge, tick dial, dot bar, gradient bar) reused across screens
-
-### Social
+###  Social
 - **Friends**: add friends with a friend code, and accept or decline requests
 - **Friend profiles**: see a friend's last 7 days of workouts, food, health and body log
 - **Sharing controls**: every category is off by default, and turning one off deletes that shared data
 - **Challenges**: custom challenges between friends (workouts completed, total volume, steps, active days) with a live leaderboard
 - **Chat**: direct messages and group chats
+
+###  Design
+- Dark and light themes (saved in settings)
+- Teal-to-lime gradient accents, card-based stats, arc, bar and line charts, pill tags and a floating bottom nav
+- Custom shared widgets (rings, pill gauge, tick dial, dot bar, gradient bar) reused across screens
+
 ---
 
 ## Tech Stack
@@ -114,7 +117,8 @@ The first screen you see on launch:
 | Area | Choice |
 |---|---|
 | Framework | Flutter (Dart) |
-| Local storage | Hive |
+| Cloud backend | Accounts, friends, challenges, chat and shared stats (add your provider here) |
+| Local storage | Hive (on-device cache for workouts, templates and logs) |
 | Secure storage | `flutter_secure_storage` (for the Gemini API key) |
 | Health data | [`health`](https://pub.dev/packages/health) package (HealthKit on iOS, Health Connect on Android) |
 | Food data | Open Food Facts API |
@@ -131,7 +135,8 @@ The first screen you see on launch:
 
 ## Architecture
 
-- **Local-first.** All user data (workouts, templates, body log, food log, settings) is stored in Hive on-device. There is no login and no backend.
+- **Cloud-backed and social.** Accounts, friends, friend profiles, challenges, chat and shared stats live in the cloud backend. Your own workouts, templates, body log, food log and settings are also kept in Hive on-device so the app stays fast.
+- **Opt-in sharing.** Nothing is shared with friends by default. Each category is turned on separately, and turning it off deletes that shared data.
 - **Seeding on first launch.** The bundled exercise dataset is parsed and written to Hive once, on a background isolate using `compute()`, so the UI thread is never blocked (this fixed an ANR caused by parsing the large dataset on the main isolate). A one-time seed flag stops it running again.
 - **Exercise model fields** include `category`, `bodyPart`, `target` and `mediaPath`, which power the library filters and detail screens.
 - **Templates store plans.** `WorkoutTemplate` holds planned sets and reps per exercise, which powers the template detail screen and sharing.
@@ -176,6 +181,8 @@ Forge reads these from Apple Health / Health Connect:
 - Sleep
 - Workouts recorded by a watch
 
+Health data is only shared with friends if you turn that category on in the sharing controls.
+
 Planned for watch workouts: a GPS route and a map view.
 
 ### Platform setup
@@ -214,6 +221,7 @@ Detected foods are shown in an editable list, so you can correct names, portions
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (stable channel)
 - Android Studio and/or Xcode
 - A physical device for Health features
+- Your own cloud backend project for accounts and social features (config files are not included in the repo)
 
 ### Install and run
 
@@ -221,6 +229,7 @@ Detected foods are shown in an editable list, so you can correct names, portions
 git clone https://github.com/<your-username>/forge.git
 cd forge
 flutter pub get
+# Add your own backend configuration here
 flutter run
 ```
 
@@ -252,9 +261,9 @@ flutter test
 forge/
 ├── lib/
 │   ├── models/          # Hive models and adapters
-│   ├── screens/         # Dashboard, library, workouts, health, nutrition, settings
+│   ├── screens/         # Dashboard, library, workouts, health, nutrition, social, settings
 │   ├── widgets/         # Shared custom widgets (rings, gauges, dials, charts, muscle map)
-│   ├── services/        # Health, food search, Gemini, sharing, seeding, ads
+│   ├── services/        # Backend, health, food search, Gemini, sharing, seeding, ads
 │   └── main.dart
 ├── assets/
 │   └── exercises.json   # Bundled exercise dataset
@@ -302,9 +311,9 @@ The project currently uses **AdMob test IDs**. Replace them with your own ad uni
 ## Known Issues
 
 - Health data requires a physical device
+- Social features (friends, challenges, chat) need an internet connection
 - Exercise images load from GitHub, so they need a connection and can show "Exercise image unavailable" if the request fails
 - Some Dashboard and Health widgets are still being polished
-- List anything else you are tracking here
 
 ---
 
@@ -323,9 +332,9 @@ This is a personal project, but suggestions and bug reports are welcome. Open an
 
 ---
 
-##  MIT License
+## License
 
-https://github.com/Shriyans737/Forge-Fitness/tree/main?tab=MIT-1-ov-file
+MIT License. See the [license file](https://github.com/Shriyans737/Forge-Fitness/tree/main?tab=MIT-1-ov-file).
 
 ---
 
@@ -339,5 +348,4 @@ https://github.com/user-attachments/assets/1f719eea-efbe-443b-ae93-78ba58244a54
 <img width="2500" height="2652" alt="collage_2" src="https://github.com/user-attachments/assets/15914d33-781a-4585-b7a4-f6cd927bc47b" />
 <img width="3710" height="2652" alt="collage_3" src="https://github.com/user-attachments/assets/176935fd-2d2d-4865-b65e-40f579f5079f" />
 
-
-
+</div>
